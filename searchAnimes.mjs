@@ -50,8 +50,13 @@ async function GetResultSearch(inputSearch)
             return route.abort();
         }
 
+        //Scripts no esenciales
+        if (type === "script" && !url.includes("jquery") && !url.includes("main")) {
+           return route.abort();
+        }
+
         return route.continue();
-    });
+    })
 
     // Capturar tamaño de cada respuesta
     page.on("response", async (response) => {
