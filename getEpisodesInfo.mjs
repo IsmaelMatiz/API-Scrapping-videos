@@ -121,6 +121,8 @@ async function GetEpisodesList(animeSelected)
 
 async function GetEpisodesListByPag(animeSelected,paginationSelected) 
 {
+    let totalBytes = 0;
+    
     chromium.use(StealthPlugin())
     const browser = await chromium.launch(
         {
@@ -136,7 +138,43 @@ async function GetEpisodesListByPag(animeSelected,paginationSelected)
 
     const page =  await browser.newPage()
 
-    let totalBytes = 0;
+    // BLOQUEO DE RECURSOS
+     await page.route("**/*", (route) => {
+        const req = route.request();
+        const type = req.resourceType();
+        const url = req.url();
+
+        // Bloquear imágenes, estilos, fuentes, videos
+        if (
+            type === "image" ||
+            type === "stylesheet" ||
+            type === "font" ||
+            type === "media"
+        ) {
+            return route.abort();
+        }
+
+        // Bloquear dominios basura o pesados
+        if (
+            url.includes("googletagmanager") ||
+            url.includes("doubleclick") ||
+            url.includes("analytics") ||
+            url.includes("facebook") ||
+            url.includes("advert") ||
+            url.includes("tracker") ||
+            url.includes("cloudflareinsights") || 
+            url.endsWith(".css")
+        ) {
+            return route.abort();
+        }
+
+        //Scripts no esenciales
+        if (type === "script" && !url.includes("jquery") && !url.includes("main")) {
+           return route.abort();
+        }
+
+        return route.continue();
+    })
 
     // Capturar tamaño de cada respuesta
     page.on("response", async (response) => {
