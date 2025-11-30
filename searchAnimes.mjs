@@ -7,6 +7,7 @@ chromium.use(StealthPlugin())
 async function GetResultSearch(inputSearch) 
 {
     inputSearch.replaceAll(" ","%20")
+    let totalBytes = 0;
     const browser = await chromium.launch(
         {
             headless: true,
@@ -20,8 +21,37 @@ async function GetResultSearch(inputSearch)
 
     const page =  await browser.newPage()
     
+    // BLOQUEO DE RECURSOS
+     await page.route("**/*", (route) => {
+        const req = route.request();
+        const type = req.resourceType();
+        const url = req.url();
 
-    let totalBytes = 0;
+        // Bloquear imágenes, estilos, fuentes, videos
+        if (
+            type === "image" ||
+            type === "stylesheet" ||
+            type === "font" ||
+            type === "media"
+        ) {
+            return route.abort();
+        }
+
+        // Bloquear dominios basura o pesados
+        if (
+            url.includes("googletagmanager") ||
+            url.includes("doubleclick") ||
+            url.includes("analytics") ||
+            url.includes("facebook") ||
+            url.includes("advert") ||
+            url.includes("tracker") ||
+            url.includes("cloudflareinsights")
+        ) {
+            return route.abort();
+        }
+
+        return route.continue();
+    });
 
     // Capturar tamaño de cada respuesta
     page.on("response", async (response) => {
