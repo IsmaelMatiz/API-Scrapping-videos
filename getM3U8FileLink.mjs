@@ -4,6 +4,8 @@ import { config } from "./config/env.mjs";
 
 async function GetVideoPlayerLink(videoLink) 
 {
+    let totalBytes = 0;
+
     chromium.use(StealthPlugin())
     const browser = await chromium.launch(
         {
@@ -18,7 +20,42 @@ async function GetVideoPlayerLink(videoLink)
 
     const page =  await browser.newPage()
 
-    let totalBytes = 0;
+    // BLOQUEO DE RECURSOS
+     await page.route("**/*", (route) => {
+        const req = route.request();
+        const type = req.resourceType();
+        const url = req.url();
+
+        // Bloquear imágenes, estilos, fuentes, videos
+        if (
+            type === "image" ||
+            type === "stylesheet" ||
+            type === "font" ||
+            type === "media"
+        ) {
+            return route.abort();
+        }
+
+        // Bloquear dominios basura o pesados
+        if (
+            url.includes("googletagmanager") ||
+            url.includes("doubleclick") ||
+            url.includes("analytics") ||
+            url.includes("facebook") ||
+            url.includes("advert") ||
+            url.includes("tracker") ||
+            url.includes("cloudflareinsights")
+        ) {
+            return route.abort();
+        }
+
+        //Scripts no esenciales
+        if (type === "script" && !url.includes("jquery") && !url.includes("main")) {
+           return route.abort();
+        }
+
+        return route.continue();
+    })
 
     // Capturar tamaño de cada respuesta
     page.on("response", async (response) => {
@@ -52,6 +89,8 @@ async function GetVideoPlayerLink(videoLink)
 
 async function GetM3U8FileLink(videoPlayerLink) 
 {
+    let totalBytes = 0;
+
     chromium.use(StealthPlugin())
     const browser = await chromium.launch(
         {
@@ -66,7 +105,42 @@ async function GetM3U8FileLink(videoPlayerLink)
 
     const page =  await browser.newPage()
 
-    let totalBytes = 0;
+    // BLOQUEO DE RECURSOS
+     await page.route("**/*", (route) => {
+        const req = route.request();
+        const type = req.resourceType();
+        const url = req.url();
+
+        // Bloquear imágenes, estilos, fuentes, videos
+        if (
+            type === "image" ||
+            type === "stylesheet" ||
+            type === "font"
+        ) {
+            return route.abort();
+        }
+
+        // Bloquear dominios basura o pesados
+        if (
+            url.includes("googletagmanager") ||
+            url.includes("doubleclick") ||
+            url.includes("analytics") ||
+            url.includes("facebook") ||
+            url.includes("advert") ||
+            url.includes("tracker") ||
+            url.includes("cloudflareinsights") || 
+            url.endsWith(".css")
+        ) {
+            return route.abort();
+        }
+
+        //Scripts no esenciales
+        // if (type === "script" && !url.includes("jquery") && !url.includes("main")) {
+        //    return route.abort();
+        // }
+
+        return route.continue();
+    })
 
     // Capturar tamaño de cada respuesta
     page.on("response", async (response) => {
@@ -83,7 +157,7 @@ async function GetM3U8FileLink(videoPlayerLink)
     const iframeElement = await page.$('video#video_html5_api source');
     const src = await iframeElement.getAttribute('src');
 
-    await browser.close()
+    //await browser.close()
 
     const jsonStr = JSON.stringify(src);
     const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
