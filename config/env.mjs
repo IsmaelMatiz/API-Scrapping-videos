@@ -17,6 +17,7 @@ export const config = {
   env: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 3000,
   baseUrl: process.env.BASE_URL,
-  scrapeEntryUrlDragonBall: process.env.SCRAPE_ENTRY_URL_DRAGON_BALL || `${process.env.BASE_URL}/dragon-ball-z/1/`,
-  scrapeEntryUrlEvangelion: process.env.SCRAPE_ENTRY_URL_EVANGELION || `${process.env.BASE_URL}/neon-genesis-evangelion-the-end-of-evangelion/pelicula/`,
+  proxyServer: process.env.PROXY_SERVER,
+  proxyUserName: process.env.PROXY_USERNAME,
+  proxyPassword: process.env.PROXY_PASSWORD
 };

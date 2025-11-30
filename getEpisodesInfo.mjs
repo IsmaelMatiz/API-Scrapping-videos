@@ -1,14 +1,33 @@
 import { chromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
+import { config } from "./config/env.mjs";
 
 async function GetEpisodesList(animeSelected) 
 {
     chromium.use(StealthPlugin())
     const browser = await chromium.launch(
-        {headless: true}
+        {
+            headless: true,
+            // proxy: 
+            // { 
+            //     server: config.proxyServer,
+            //     username: config.proxyUserName,
+            //     password: config.proxyPassword
+            // }
+        }
     )
 
     const page =  await browser.newPage()
+
+    let totalBytes = 0;
+
+    // Capturar tamaño de cada respuesta
+    page.on("response", async (response) => {
+        try {
+            const buffer = await response.body();
+            totalBytes += buffer.length;
+        } catch (e) {}
+    });
 
     await page.goto(
         animeSelected
@@ -44,6 +63,20 @@ async function GetEpisodesList(animeSelected)
 
     await browser.close()
 
+    const jsonStr = JSON.stringify(pagination);
+    const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
+
+    const jsonStr2 = JSON.stringify(episodes);
+    const jsonBytes2 = Buffer.byteLength(jsonStr2, "utf8");
+
+    const totalMB = totalBytes / (1024 * 1024);
+    const jsonMB = jsonBytes / (1024 * 1024);
+    const jsonMB2 = jsonBytes2 / (1024 * 1024);
+
+    const totalFinal = (totalMB + jsonMB + jsonMB2).toFixed(4);
+
+    console.log("TOTAL DESCARGADO:", totalFinal, "MB");
+
     return {episodes, pagination}
 }
 
@@ -51,10 +84,28 @@ async function GetEpisodesListByPag(animeSelected,paginationSelected)
 {
     chromium.use(StealthPlugin())
     const browser = await chromium.launch(
-        {headless: true}
+        {
+            headless: true,
+            // proxy: 
+            // { 
+            //     server: config.proxyServer,
+            //     username: config.proxyUserName,
+            //     password: config.proxyPassword
+            // }
+        }
     )
 
     const page =  await browser.newPage()
+
+    let totalBytes = 0;
+
+    // Capturar tamaño de cada respuesta
+    page.on("response", async (response) => {
+        try {
+            const buffer = await response.body();
+            totalBytes += buffer.length;
+        } catch (e) {}
+    });
 
     await page.goto(
         animeSelected
@@ -88,6 +139,16 @@ async function GetEpisodesListByPag(animeSelected,paginationSelected)
     )
 
     await browser.close()
+
+    const jsonStr = JSON.stringify(episodes);
+    const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
+
+    const totalMB = totalBytes / (1024 * 1024);
+    const jsonMB = jsonBytes / (1024 * 1024);
+
+    const totalFinal = (totalMB + jsonMB).toFixed(4);
+
+    console.log("TOTAL DESCARGADO:", totalFinal, "MB");
 
     return episodes
 }

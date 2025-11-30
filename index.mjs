@@ -14,25 +14,25 @@ app.get("/", (req, res) => {
   res.send("API funcionando 🚀");
 })
 
-app.get("/searchAnime", async (req, res)=> {
-    const resultAnimes = await GetResultSearch(req.body.query)
+app.post("/searchAnime", async (req, res)=> {
+    const resultAnimes = await GetResultSearch(req.body.query)    
 
     return res.json(resultAnimes)
 })
 
-app.get("/getEpisodesInfo", async (req, res)=> {
+app.post("/getEpisodesInfo", async (req, res)=> {
     const episodes = await GetEpisodesList(req.body.linkAnimeSelected)
 
     return res.json(episodes)
 })
 
-app.get("/getEpisodesInfoByPag", async (req, res)=> {
+app.post("/getEpisodesInfoByPag", async (req, res)=> {
     const episodes = await GetEpisodesListByPag(req.body.linkAnimeSelected,req.body.pagSelected)
 
     return res.json(episodes)
 })
 
-app.get("/getEpisodeFileM3U8", async (req, res)=> {
+app.post("/getEpisodeFileM3U8", async (req, res)=> {
     const episodes = await GetM3U8Link(req.body.linkEpisodeSelected)
 
     return res.json(episodes)

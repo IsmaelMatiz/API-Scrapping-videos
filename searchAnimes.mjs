@@ -2,19 +2,37 @@ import { chromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { config } from "./config/env.mjs";
 
+chromium.use(StealthPlugin())
 
 async function GetResultSearch(inputSearch) 
 {
     inputSearch.replaceAll(" ","%20")
-    chromium.use(StealthPlugin())
     const browser = await chromium.launch(
-        {headless: true}
+        {
+            headless: true,
+            // proxy: { 
+            //     server: config.proxyServer,
+            //     username: config.proxyUserName,
+            //     password: config.proxyPassword
+            // }
+        }
     )
 
     const page =  await browser.newPage()
+    
+
+    let totalBytes = 0;
+
+    // Capturar tamaño de cada respuesta
+    page.on("response", async (response) => {
+        try {
+            const buffer = await response.body();
+            totalBytes += buffer.length;
+        } catch (e) {}
+    });
 
     await page.goto(
-        config.baseUrl+"/buscar/"+inputSearch
+        config.baseUrl+"/buscar/"+inputSearch, { waitUntil: "domcontentloaded" }
     )
 
     const animes = await page.$$eval(
@@ -34,6 +52,16 @@ async function GetResultSearch(inputSearch)
             })
         )
     )
+
+    const jsonStr = JSON.stringify(animes);
+    const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
+
+    const totalMB = totalBytes / (1024 * 1024);
+    const jsonMB = jsonBytes / (1024 * 1024);
+
+    const totalFinal = (totalMB + jsonMB).toFixed(4);
+
+    console.log("TOTAL DESCARGADO:", totalFinal, "MB");
     
     await browser.close()
 
