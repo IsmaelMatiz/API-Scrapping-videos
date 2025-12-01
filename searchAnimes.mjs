@@ -19,7 +19,15 @@ async function GetResultSearch(inputSearch)
         }
     )
 
-    const page =  await browser.newPage()
+    const context = await browser.newContext({
+        userAgent:
+            "Mozilla/5.0 (Linux; Android 10; SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Mobile Safari/537.36",
+        extraHTTPHeaders: {
+            "Save-Data": "on", // 🔥 reduce peso
+        }
+    });
+
+    const page =  await context.newPage()
     
     // BLOQUEO DE RECURSOS
      await page.route("**/*", (route) => {
@@ -27,36 +35,36 @@ async function GetResultSearch(inputSearch)
         const type = req.resourceType();
         const url = req.url();
 
+        // Bloquear TODAS estas categorías
+        const blockTypes = ["image", "font", "media", "stylesheet"];
+        const blockHosts = [
+            "googletagmanager",
+            "doubleclick",
+            "analytics",
+            "facebook",
+            "ads",
+            "adservice",
+            "advert",
+            "tracking",
+            "cloudflareinsights"
+        ];
+
         // Bloquear imágenes, estilos, fuentes, videos
-        if (
-            type === "image" ||
-            type === "stylesheet" ||
-            type === "font" ||
-            type === "media"
-        ) {
-            return route.abort();
-        }
+        if (blockTypes.includes(type)) return route.abort();
 
         // Bloquear dominios basura o pesados
-        if (
-            url.includes("googletagmanager") ||
-            url.includes("doubleclick") ||
-            url.includes("analytics") ||
-            url.includes("facebook") ||
-            url.includes("advert") ||
-            url.includes("tracker") ||
-            url.includes("cloudflareinsights")
-        ) {
-            return route.abort();
-        }
+        if (blockHosts.some(h => url.includes(h))) return route.abort();
 
         //Scripts no esenciales
-        if (type === "script" && !url.includes("jquery") && !url.includes("main")) {
+        if (type === "script" && !url.includes(config.baseUrl)) {
            return route.abort();
         }
 
         return route.continue();
     })
+
+    // 🔥 Reduce aún más el tamaño del DOM
+    await context.setOffline(false);
 
     // Capturar tamaño de cada respuesta
     page.on("response", async (response) => {
@@ -74,7 +82,6 @@ async function GetResultSearch(inputSearch)
         '.anime__item',(results) => (
             results.map((element)=> {
                 const title = element.querySelector(".anime__item__text h5 a")?.innerText
-
                 if (!title) return null 
 
                 const link = element.querySelector(".anime__item__text h5 a")?.getAttribute("href")
