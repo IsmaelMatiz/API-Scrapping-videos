@@ -8,7 +8,7 @@ async function GetEpisodesList(animeSelected)
     chromium.use(StealthPlugin())
     const browser = await chromium.launch(
         {
-            headless: true,
+            headless: false,
             // proxy: 
             // { 
             //     server: config.proxyServer,
@@ -18,7 +18,15 @@ async function GetEpisodesList(animeSelected)
         }
     )
 
-    const page =  await browser.newPage()
+    const context = await browser.newContext({
+        userAgent:
+            "Mozilla/5.0 (Linux; Android 10; SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Mobile Safari/537.36",
+        extraHTTPHeaders: {
+            "Save-Data": "on", // 🔥 reduce peso
+        }
+    });
+
+    const page =  await context.newPage()
 
     // BLOQUEO DE RECURSOS
      await page.route("**/*", (route) => {
@@ -57,6 +65,9 @@ async function GetEpisodesList(animeSelected)
 
         return route.continue();
     })
+
+    // 🔥 Reduce aún más el tamaño del DOM
+    await context.setOffline(false);
 
     // Capturar tamaño de cada respuesta
     page.on("response", async (response) => {
@@ -100,7 +111,7 @@ async function GetEpisodesList(animeSelected)
         )
     )
 
-    await browser.close()
+    //await browser.close()
 
     const jsonStr = JSON.stringify(pagination);
     const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
@@ -136,7 +147,15 @@ async function GetEpisodesListByPag(animeSelected,paginationSelected)
         }
     )
 
-    const page =  await browser.newPage()
+    const context = await browser.newContext({
+        userAgent:
+            "Mozilla/5.0 (Linux; Android 10; SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Mobile Safari/537.36",
+        extraHTTPHeaders: {
+            "Save-Data": "on", // 🔥 reduce peso
+        }
+    });
+
+    const page =  await context.newPage()
 
     // BLOQUEO DE RECURSOS
      await page.route("**/*", (route) => {
@@ -175,6 +194,9 @@ async function GetEpisodesListByPag(animeSelected,paginationSelected)
 
         return route.continue();
     })
+
+    // 🔥 Reduce aún más el tamaño del DOM
+    await context.setOffline(false);
 
     // Capturar tamaño de cada respuesta
     page.on("response", async (response) => {
