@@ -89,9 +89,9 @@ async function GetEpisodesList(animeSelected)
     )
 
     const pagination = await page.$$eval(
-        'div.anime__pagination ul li', (results) => (
+        'select.anime__pagination option', (results) => (
             results.map((element)=>{
-                const pagId = element.getAttribute("data-value")
+                const pagId = element.getAttribute("value")
 
                 const pagFromTo = element?.innerText
 

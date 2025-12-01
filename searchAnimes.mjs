@@ -46,7 +46,8 @@ async function GetResultSearch(inputSearch)
             "adservice",
             "advert",
             "tracking",
-            "cloudflareinsights"
+            "cloudflareinsights",
+            ".css"
         ];
 
         // Bloquear imágenes, estilos, fuentes, videos
@@ -95,6 +96,8 @@ async function GetResultSearch(inputSearch)
         )
     )
 
+    await browser.close()
+
     const jsonStr = JSON.stringify(animes);
     const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
 
@@ -104,8 +107,6 @@ async function GetResultSearch(inputSearch)
     const totalFinal = (totalMB + jsonMB).toFixed(4);
 
     console.log("TOTAL DESCARGADO:", totalFinal, "MB");
-    
-    await browser.close()
 
     return animes
 }
