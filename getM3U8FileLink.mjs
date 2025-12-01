@@ -50,7 +50,7 @@ async function GetVideoPlayerLink(videoLink)
         }
 
         //Scripts no esenciales
-        if (type === "script" && !url.includes("jquery") && !url.includes("main")) {
+        if (type === "script" && !url.includes("jquery")) {
            return route.abort();
         }
 
