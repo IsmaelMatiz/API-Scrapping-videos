@@ -8,13 +8,13 @@ async function GetEpisodesList(animeSelected)
     chromium.use(StealthPlugin())
     const browser = await chromium.launch(
         {
-            headless: false,
-            // proxy: 
-            // { 
-            //     server: config.proxyServer,
-            //     username: config.proxyUserName,
-            //     password: config.proxyPassword
-            // }
+            headless: true,
+            proxy: 
+            { 
+                server: config.proxyServer,
+                username: config.proxyUserName,
+                password: config.proxyPassword
+            }
         }
     )
 
@@ -138,12 +138,12 @@ async function GetEpisodesListByPag(animeSelected,paginationSelected)
     const browser = await chromium.launch(
         {
             headless: true,
-            // proxy: 
-            // { 
-            //     server: config.proxyServer,
-            //     username: config.proxyUserName,
-            //     password: config.proxyPassword
-            // }
+            proxy: 
+            { 
+                server: config.proxyServer,
+                username: config.proxyUserName,
+                password: config.proxyPassword
+            }
         }
     )
 

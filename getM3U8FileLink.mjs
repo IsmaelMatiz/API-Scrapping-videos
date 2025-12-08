@@ -10,11 +10,11 @@ async function GetVideoPlayerLink(videoLink)
     const browser = await chromium.launch(
         {
             headless: true,
-            // proxy: { 
-            //     server: config.proxyServer,
-            //     username: config.proxyUserName,
-            //     password: config.proxyPassword
-            // }
+            proxy: { 
+                server: config.proxyServer,
+                username: config.proxyUserName,
+                password: config.proxyPassword
+            }
         }
     )
 
@@ -95,11 +95,11 @@ async function GetM3U8FileLink(videoPlayerLink)
     const browser = await chromium.launch(
         {
             headless: true,
-            // proxy: { 
-            //     server: config.proxyServer,
-            //     username: config.proxyUserName,
-            //     password: config.proxyPassword
-            // }
+            proxy: { 
+                server: config.proxyServer,
+                username: config.proxyUserName,
+                password: config.proxyPassword
+            }
         }
     )
 
@@ -154,10 +154,24 @@ async function GetM3U8FileLink(videoPlayerLink)
         videoPlayerLink
     )
 
-    const iframeElement = await page.$('video#video_html5_api source');
-    const src = await iframeElement.getAttribute('src');
+    // 1. Localizar el video y simular click derecho
+  const video = await page.locator('.dplayer-video-wrap');
+  await video.click({ button: 'right' }); // click derecho
+  await page.waitForTimeout(500); // medio segundo de espera
 
-    //await browser.close()
+  // 2. Esperar a que aparezca el popup
+  await page.waitForSelector('div.dplayer-menu', { state: 'visible' });
+  await page.waitForTimeout(500); // medio segundo de espera
+
+  // 3. Click en el primer item del menú
+  const firstItem = page.locator('div.dplayer-menu div.dplayer-menu-item').first();
+  await firstItem.click();
+  await page.waitForTimeout(500); // medio segundo de espera
+
+  // 4. Tomar el texto del span
+  const src = await page.locator('div.dplayer-info-panel-item-url span.dplayer-info-panel-item-data').innerText();
+
+    await browser.close()
 
     const jsonStr = JSON.stringify(src);
     const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
