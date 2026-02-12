@@ -3,6 +3,7 @@ import { GetEpisodesList, GetEpisodesListByPag } from "./getEpisodesInfo.mjs"
 import { GetM3U8Link } from "./getM3U8FileLink.mjs"
 import { config } from "./config/env.mjs";
 import express from "express"
+import { GetMainPage } from "./getMainPage.mjs";
 
 const app = express();
 const PORT = config.port;
@@ -37,6 +38,35 @@ app.post("/getEpisodeFileM3U8", async (req, res)=> {
 
     return res.json(episodes)
 })
+
+app.get("/getMainPage", async (req, res)=> {
+    const filterMostPopularOnes = {
+        filtro: "popularidad"
+    };
+
+    const filterPopularCurrentlyAiring = {
+        filtro: "popularidad",
+        estado: "emision"
+    };
+
+    const filterPopularLatin = {
+        filtro: "popularidad",
+        categoria: "latino"
+    };
+
+    const filterPopularMovies = {
+        filtro: "popularidad",
+        tipo: "peliculas"
+    };
+
+    const episodesMostPopular = await GetMainPage(filterMostPopularOnes)
+    const episodesPopularCurrentlyAiring = await GetMainPage(filterPopularCurrentlyAiring)
+    const episodesPopularLatin = await GetMainPage(filterPopularLatin)
+    const episodesPopularMovies = await GetMainPage(filterPopularMovies)
+
+    return res.json({episodesMostPopular,episodesPopularCurrentlyAiring,episodesPopularLatin,episodesPopularMovies})
+})
+
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

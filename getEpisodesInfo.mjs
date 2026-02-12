@@ -83,6 +83,12 @@ async function GetEpisodesList(animeSelected)
 
     await page.waitForSelector('.epcontent')
 
+    const animeDescription = await page.$eval(
+        "div.anime_info p.scroll",
+        el => el.innerText
+    )
+
+
     const episodes = await page.$$eval(
         '.epcontent',(results) => (
             results.map((element)=> {
@@ -127,7 +133,7 @@ async function GetEpisodesList(animeSelected)
 
     console.log("TOTAL DESCARGADO:", totalFinal, "MB");
 
-    return {episodes, pagination}
+    return {animeDescription,episodes, pagination}
 }
 
 async function GetEpisodesListByPag(animeSelected,paginationSelected) 

@@ -66,7 +66,11 @@ async function GetVideoPlayerLink(videoLink)
     });
 
     await page.goto(
-        videoLink
+        videoLink,
+        {
+            timeout: 90000, // 90 segundos en milisegundos
+            waitUntil: "domcontentloaded" // opcional, puedes ajustar a "networkidle" si lo prefieres
+        }
     )
 
     const iframeElement = await page.$('iframe.player_conte');
@@ -106,41 +110,41 @@ async function GetM3U8FileLink(videoPlayerLink)
     const page =  await browser.newPage()
 
     // BLOQUEO DE RECURSOS
-     await page.route("**/*", (route) => {
-        const req = route.request();
-        const type = req.resourceType();
-        const url = req.url();
+    //  await page.route("**/*", (route) => {
+    //     const req = route.request();
+    //     const type = req.resourceType();
+    //     const url = req.url();
 
-        // Bloquear imágenes, estilos, fuentes, videos
-        if (
-            type === "image" ||
-            type === "stylesheet" ||
-            type === "font"
-        ) {
-            return route.abort();
-        }
+    //     // Bloquear imágenes, estilos, fuentes, videos
+    //     if (
+    //         type === "image" ||
+    //         type === "stylesheet" ||
+    //         type === "font"
+    //     ) {
+    //         return route.abort();
+    //     }
 
-        // Bloquear dominios basura o pesados
-        if (
-            url.includes("googletagmanager") ||
-            url.includes("doubleclick") ||
-            url.includes("analytics") ||
-            url.includes("facebook") ||
-            url.includes("advert") ||
-            url.includes("tracker") ||
-            url.includes("cloudflareinsights") || 
-            url.endsWith(".css")
-        ) {
-            return route.abort();
-        }
+    //     // Bloquear dominios basura o pesados
+    //     if (
+    //         url.includes("googletagmanager") ||
+    //         url.includes("doubleclick") ||
+    //         url.includes("analytics") ||
+    //         url.includes("facebook") ||
+    //         url.includes("advert") ||
+    //         url.includes("tracker") ||
+    //         url.includes("cloudflareinsights") || 
+    //         url.endsWith(".css")
+    //     ) {
+    //         return route.abort();
+    //     }
 
-        //Scripts no esenciales
-        // if (type === "script" && !url.includes("jquery") && !url.includes("main")) {
-        //    return route.abort();
-        // }
+    //     //Scripts no esenciales
+    //     // if (type === "script" && !url.includes("jquery") && !url.includes("main")) {
+    //     //    return route.abort();
+    //     // }
 
-        return route.continue();
-    })
+    //     return route.continue();
+    // })
 
     // Capturar tamaño de cada respuesta
     page.on("response", async (response) => {
@@ -151,7 +155,11 @@ async function GetM3U8FileLink(videoPlayerLink)
     });
 
     await page.goto(
-        videoPlayerLink
+        videoPlayerLink,
+        {
+            timeout: 90000, // 90 segundos en milisegundos
+            waitUntil: "domcontentloaded" // opcional, puedes ajustar a "networkidle" si lo prefieres
+        }
     )
 
     // 1. Localizar el video y simular click derecho
