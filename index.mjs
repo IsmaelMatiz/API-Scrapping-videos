@@ -68,6 +68,11 @@ app.get("/getMainPage", async (req, res)=> {
 })
 
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+
+// En cloud (Docker/Cloud Run) debe escuchar en 0.0.0.0 para aceptar conexiones externas.
+// En local, 0.0.0.0 también responde en localhost.
+const HOST = process.env.HOST || '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
+  console.log(`Servidor corriendo en http://${HOST}:${PORT}`)
+})
