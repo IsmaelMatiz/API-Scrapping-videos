@@ -17,6 +17,7 @@ async function GetEpisodesList(animeSelected)
             }
         }
     )
+    
 
     const context = await browser.newContext({
         userAgent:
