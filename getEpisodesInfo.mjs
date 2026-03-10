@@ -1,33 +1,41 @@
 import { chromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { config } from "./config/env.mjs";
+import { logScrapeError } from "./utils/scrapeError.mjs";
 
 async function GetEpisodesList(animeSelected) 
 {
     let totalBytes = 0;
-    chromium.use(StealthPlugin())
-    const browser = await chromium.launch(
-        {
-            headless: true,
-            proxy: 
-            { 
-                server: config.proxyServer,
-                username: config.proxyUserName,
-                password: config.proxyPassword
+    let browser;
+
+    try {
+        chromium.use(StealthPlugin())
+        browser = await chromium.launch(
+            {
+                headless: true,
+                proxy: 
+                { 
+                    server: config.proxyServer,
+                    username: config.proxyUserName,
+                    password: config.proxyPassword
+                },
+                args: [
+                    '--ignore-certificate-errors',
+                    '--ignore-certificate-errors-spki-list'
+                ]
             }
-        }
-    )
-    
+        )
+        
 
-    const context = await browser.newContext({
-        userAgent:
-            "Mozilla/5.0 (Linux; Android 10; SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Mobile Safari/537.36",
-        extraHTTPHeaders: {
-            "Save-Data": "on", // 🔥 reduce peso
-        }
-    });
+        const context = await browser.newContext({
+            userAgent:
+                "Mozilla/5.0 (Linux; Android 10; SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Mobile Safari/537.36",
+            extraHTTPHeaders: {
+                "Save-Data": "on", // 🔥 reduce peso
+            }
+        });
 
-    const page =  await context.newPage()
+        const page =  await context.newPage()
 
     // BLOQUEO DE RECURSOS
      await page.route("**/*", (route) => {
@@ -135,34 +143,51 @@ async function GetEpisodesList(animeSelected)
     console.log("TOTAL DESCARGADO:", totalFinal, "MB");
 
     return {animeDescription,episodes, pagination}
+    } catch (error) {
+        logScrapeError("GetEpisodesList", error, { animeSelected });
+    } finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (closeErr) {
+                logScrapeError("GetEpisodesList(browser.close)", closeErr, { animeSelected });
+            }
+        }
+    }
 }
 
 async function GetEpisodesListByPag(animeSelected,paginationSelected) 
 {
     let totalBytes = 0;
-    
-    chromium.use(StealthPlugin())
-    const browser = await chromium.launch(
-        {
-            headless: true,
-            proxy: 
-            { 
-                server: config.proxyServer,
-                username: config.proxyUserName,
-                password: config.proxyPassword
+    let browser;
+
+    try {
+        chromium.use(StealthPlugin())
+        browser = await chromium.launch(
+            {
+                headless: true,
+                proxy: 
+                { 
+                    server: config.proxyServer,
+                    username: config.proxyUserName,
+                    password: config.proxyPassword
+                },
+                args: [
+                    '--ignore-certificate-errors',
+                    '--ignore-certificate-errors-spki-list'
+                ]
             }
-        }
-    )
+        )
 
-    const context = await browser.newContext({
-        userAgent:
-            "Mozilla/5.0 (Linux; Android 10; SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Mobile Safari/537.36",
-        extraHTTPHeaders: {
-            "Save-Data": "on", // 🔥 reduce peso
-        }
-    });
+        const context = await browser.newContext({
+            userAgent:
+                "Mozilla/5.0 (Linux; Android 10; SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Mobile Safari/537.36",
+            extraHTTPHeaders: {
+                "Save-Data": "on", // 🔥 reduce peso
+            }
+        });
 
-    const page =  await context.newPage()
+        const page =  await context.newPage()
 
     // BLOQUEO DE RECURSOS
      await page.route("**/*", (route) => {
@@ -244,19 +269,28 @@ async function GetEpisodesListByPag(animeSelected,paginationSelected)
         )
     )
 
-    await browser.close()
+        const jsonStr = JSON.stringify(episodes);
+        const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
 
-    const jsonStr = JSON.stringify(episodes);
-    const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
+        const totalMB = totalBytes / (1024 * 1024);
+        const jsonMB = jsonBytes / (1024 * 1024);
 
-    const totalMB = totalBytes / (1024 * 1024);
-    const jsonMB = jsonBytes / (1024 * 1024);
+        const totalFinal = (totalMB + jsonMB).toFixed(4);
 
-    const totalFinal = (totalMB + jsonMB).toFixed(4);
+        console.log("TOTAL DESCARGADO:", totalFinal, "MB");
 
-    console.log("TOTAL DESCARGADO:", totalFinal, "MB");
-
-    return episodes
+        return episodes
+    } catch (error) {
+        logScrapeError("GetEpisodesListByPag", error, { animeSelected, paginationSelected });
+    } finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (closeErr) {
+                logScrapeError("GetEpisodesListByPag(browser.close)", closeErr, { animeSelected, paginationSelected });
+            }
+        }
+    }
 }
 
 //Codigo util para  cerrar popus, si lo necesito despues por si acaso

@@ -1,24 +1,30 @@
 import { chromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { config } from "./config/env.mjs";
+import { logScrapeError } from "./utils/scrapeError.mjs";
 
 async function GetVideoPlayerLink(videoLink) 
 {
     let totalBytes = 0;
+    let browser; // Lo declaramos afuera para asegurar que podamos cerrarlo al final
 
-    chromium.use(StealthPlugin())
-    const browser = await chromium.launch(
-        {
+    try {
+        chromium.use(StealthPlugin())
+        
+        browser = await chromium.launch({
             headless: true,
             proxy: { 
                 server: config.proxyServer,
                 username: config.proxyUserName,
                 password: config.proxyPassword
-            }
-        }
-    )
+            },
+            args: [
+                '--ignore-certificate-errors',
+                '--ignore-certificate-errors-spki-list'
+            ]
+        });
 
-    const page =  await browser.newPage()
+        const page = await browser.newPage();
 
     // BLOQUEO DE RECURSOS
      await page.route("**/*", (route) => {
@@ -76,8 +82,6 @@ async function GetVideoPlayerLink(videoLink)
     const iframeElement = await page.$('iframe.player_conte');
     const src = await iframeElement.getAttribute('src');
 
-    await browser.close()
-
     const jsonStr = JSON.stringify(src);
     const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
 
@@ -88,26 +92,44 @@ async function GetVideoPlayerLink(videoLink)
 
     console.log("TOTAL DESCARGADO:", totalFinal, "MB");
 
-    return src
+        return src
+    } catch (error) {
+        logScrapeError("GetVideoPlayerLink", error, { videoLink });
+    } finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (closeErr) {
+                logScrapeError("GetVideoPlayerLink(browser.close)", closeErr, { videoLink });
+            }
+        }
+    }
+
 }
 
 async function GetM3U8FileLink(videoPlayerLink) 
 {
     let totalBytes = 0;
+    let browser;
 
-    chromium.use(StealthPlugin())
-    const browser = await chromium.launch(
-        {
-            headless: true,
-            proxy: { 
-                server: config.proxyServer,
-                username: config.proxyUserName,
-                password: config.proxyPassword
+    try {
+        chromium.use(StealthPlugin())
+        browser = await chromium.launch(
+            {
+                headless: true,
+                proxy: { 
+                    server: config.proxyServer,
+                    username: config.proxyUserName,
+                    password: config.proxyPassword
+                },
+                args: [
+                    '--ignore-certificate-errors',
+                    '--ignore-certificate-errors-spki-list'
+                ]
             }
-        }
-    )
+        )
 
-    const page =  await browser.newPage()
+        const page =  await browser.newPage()
 
     // BLOQUEO DE RECURSOS
     //  await page.route("**/*", (route) => {
@@ -179,19 +201,28 @@ async function GetM3U8FileLink(videoPlayerLink)
   // 4. Tomar el texto del span
   const src = await page.locator('div.dplayer-info-panel-item-url span.dplayer-info-panel-item-data').innerText();
 
-    await browser.close()
+        const jsonStr = JSON.stringify(src);
+        const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
 
-    const jsonStr = JSON.stringify(src);
-    const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
+        const totalMB = totalBytes / (1024 * 1024);
+        const jsonMB = jsonBytes / (1024 * 1024);
 
-    const totalMB = totalBytes / (1024 * 1024);
-    const jsonMB = jsonBytes / (1024 * 1024);
+        const totalFinal = (totalMB + jsonMB).toFixed(4);
 
-    const totalFinal = (totalMB + jsonMB).toFixed(4);
+        console.log("TOTAL DESCARGADO:", totalFinal, "MB");
 
-    console.log("TOTAL DESCARGADO:", totalFinal, "MB");
-
-    return src
+        return src
+    } catch (error) {
+        logScrapeError("GetM3U8FileLink", error, { videoPlayerLink });
+    } finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (closeErr) {
+                logScrapeError("GetM3U8FileLink(browser.close)", closeErr, { videoPlayerLink });
+            }
+        }
+    }
 }
 
 async function GetM3U8Link(videoPageLink) {

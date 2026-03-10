@@ -1,6 +1,7 @@
 import { chromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { config } from "./config/env.mjs";
+import { logScrapeError } from "./utils/scrapeError.mjs";
 
 chromium.use(StealthPlugin())
 
@@ -8,26 +9,33 @@ async function GetResultSearch(inputSearch)
 {
     inputSearch.replaceAll(" ","%20")
     let totalBytes = 0;
-    const browser = await chromium.launch(
-        {
-            headless: true,
-            proxy: { 
-                server: config.proxyServer,
-                username: config.proxyUserName,
-                password: config.proxyPassword
+    let browser;
+
+    try {
+        browser = await chromium.launch(
+            {
+                headless: true,
+                proxy: { 
+                    server: config.proxyServer,
+                    username: config.proxyUserName,
+                    password: config.proxyPassword
+                },
+                args: [
+                    '--ignore-certificate-errors',
+                    '--ignore-certificate-errors-spki-list'
+                ]
             }
-        }
-    )
+        )
 
-    const context = await browser.newContext({
-        userAgent:
-            "Mozilla/5.0 (Linux; Android 10; SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Mobile Safari/537.36",
-        extraHTTPHeaders: {
-            "Save-Data": "on", // 🔥 reduce peso
-        }
-    });
+        const context = await browser.newContext({
+            userAgent:
+                "Mozilla/5.0 (Linux; Android 10; SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0 Mobile Safari/537.36",
+            extraHTTPHeaders: {
+                "Save-Data": "on", // 🔥 reduce peso
+            }
+        });
 
-    const page =  await context.newPage()
+        const page =  await context.newPage()
     
     // BLOQUEO DE RECURSOS
      await page.route("**/*", (route) => {
@@ -96,8 +104,6 @@ async function GetResultSearch(inputSearch)
         )
     )
 
-    await browser.close()
-
     const jsonStr = JSON.stringify(animes);
     const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
 
@@ -108,7 +114,18 @@ async function GetResultSearch(inputSearch)
 
     console.log("TOTAL DESCARGADO:", totalFinal, "MB");
 
-    return animes
+        return animes
+    } catch (error) {
+        logScrapeError("GetResultSearch", error, { inputSearch });
+    } finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (closeErr) {
+                logScrapeError("GetResultSearch(browser.close)", closeErr, { inputSearch });
+            }
+        }
+    }
 }
 
 export { GetResultSearch }
