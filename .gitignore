@@ -1,4 +1,6 @@
 node_modules
 .env
 
+frecuentCommandsDocker.txt
+
 /Conexion SSH instancia OCI API

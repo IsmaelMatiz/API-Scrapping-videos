@@ -8,23 +8,41 @@ async function GetVideoPlayerLink(videoLink)
     let totalBytes = 0;
     let browser; // Lo declaramos afuera para asegurar que podamos cerrarlo al final
 
+    // ... justo antes del try
+    console.log("PROXY CONFIG:", config.proxyServer ? "HAY PROXY" : "NO HAY PROXY");
     try {
         chromium.use(StealthPlugin())
         
         browser = await chromium.launch({
             headless: true,
-            proxy: { 
-                server: config.proxyServer,
-                username: config.proxyUserName,
-                password: config.proxyPassword
-            },
+            // proxy: { 
+            //     server: config.proxyServer,
+            //     username: config.proxyUserName,
+            //     password: config.proxyPassword
+            // },
             args: [
-                '--ignore-certificate-errors',
-                '--ignore-certificate-errors-spki-list'
-            ]
+                    '--no-sandbox',                  // Obligatorio en Docker/Cloud Run
+                    '--disable-setuid-sandbox',      // Obligatorio en Docker/Cloud Run
+                    '--disable-dev-shm-usage',       // Evita que el navegador colapse por falta de memoria compartida
+                    '--ignore-certificate-errors',
+                    '--ignore-certificate-errors-spki-list'
+                ]
         });
 
         const page = await browser.newPage();
+
+        // --- 🔥 INICIO PRUEBA DE IP 🔥 ---
+        try {
+            console.log("🔍 Verificando IP de salida a través del proxy...");
+            // Usamos ipify que es súper rápido y no tiene bloqueos anti-bots
+            const responseIp = await page.goto('https://api.ipify.org?format=json', { timeout: 15000 });
+            const ipData = await responseIp.json();
+            console.log("✅ ÉXITO! LA IP QUE VE EL MUNDO ES:", ipData.ip);
+        } catch (ipError) {
+            console.log("❌ ERROR: NO PUDE NI SIQUIERA VER MI IP. EL PROXY ME ESTÁ BLOQUEANDO.");
+            console.log("Detalle del error del proxy:", ipError.message);
+        }
+        // --- 🔥 FIN PRUEBA DE IP 🔥 ---
 
     // BLOQUEO DE RECURSOS
      await page.route("**/*", (route) => {
@@ -56,9 +74,9 @@ async function GetVideoPlayerLink(videoLink)
         }
 
         //Scripts no esenciales
-        if (type === "script" && !url.includes("jquery")) {
-           return route.abort();
-        }
+        // if (type === "script" && !url.includes("jquery")) {
+        //    return route.abort();
+        // }
 
         return route.continue();
     })
@@ -79,8 +97,16 @@ async function GetVideoPlayerLink(videoLink)
         }
     )
 
-    const iframeElement = await page.$('iframe.player_conte');
+    // 🔥 AGREGA ESTO AQUÍ: Vamos a ver qué página cargó realmente
+    const tituloPagina = await page.title();
+    console.log("TÍTULO DE LA PÁGINA VISTA POR PLAYWRIGHT:", tituloPagina);
+
+    const iframeElement = await page.waitForSelector('iframe.player_conte', { state: 'attached', timeout: 15000 });
     const src = await iframeElement.getAttribute('src');
+
+    if (!src) {
+        throw new Error("Se encontró el iframe pero no tiene atributo src");
+    }
 
     const jsonStr = JSON.stringify(src);
     const jsonBytes = Buffer.byteLength(jsonStr, "utf8");
@@ -117,12 +143,15 @@ async function GetM3U8FileLink(videoPlayerLink)
         browser = await chromium.launch(
             {
                 headless: true,
-                proxy: { 
-                    server: config.proxyServer,
-                    username: config.proxyUserName,
-                    password: config.proxyPassword
-                },
+                // proxy: { 
+                //     server: config.proxyServer,
+                //     username: config.proxyUserName,
+                //     password: config.proxyPassword
+                // },
                 args: [
+                    '--no-sandbox',                  // Obligatorio en Docker/Cloud Run
+                    '--disable-setuid-sandbox',      // Obligatorio en Docker/Cloud Run
+                    '--disable-dev-shm-usage',       // Evita que el navegador colapse por falta de memoria compartida
                     '--ignore-certificate-errors',
                     '--ignore-certificate-errors-spki-list'
                 ]
@@ -227,6 +256,12 @@ async function GetM3U8FileLink(videoPlayerLink)
 
 async function GetM3U8Link(videoPageLink) {
     let resultLink = await GetVideoPlayerLink(videoPageLink)
+
+    // Validamos que el primer paso haya devuelto una URL real
+    if (!resultLink) {
+        throw new Error("No se pudo obtener el link del reproductor en el primer paso.");
+    }
+
     let resulVideoUrl = await GetM3U8FileLink(resultLink)
 
     return {urlLink: resulVideoUrl}

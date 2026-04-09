@@ -14,12 +14,15 @@ async function GetMainPage(filters)
         browser = await chromium.launch(
             {
                 headless: true,
-                proxy: { 
-                    server: config.proxyServer,
-                    username: config.proxyUserName,
-                    password: config.proxyPassword
-                },
+                // proxy: { 
+                //     server: config.proxyServer,
+                //     username: config.proxyUserName,
+                //     password: config.proxyPassword
+                // },
                 args: [
+                    '--no-sandbox',                  // Obligatorio en Docker/Cloud Run
+                    '--disable-setuid-sandbox',      // Obligatorio en Docker/Cloud Run
+                    '--disable-dev-shm-usage',       // Evita que el navegador colapse por falta de memoria compartida
                     '--ignore-certificate-errors',
                     '--ignore-certificate-errors-spki-list'
                 ]

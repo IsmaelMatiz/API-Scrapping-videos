@@ -1,13 +1,17 @@
+import cors from "cors";
 import { GetResultSearch } from "./searchAnimes.mjs"
 import { GetEpisodesList, GetEpisodesListByPag } from "./getEpisodesInfo.mjs"
 import { GetM3U8Link } from "./getM3U8FileLink.mjs"
 import { config } from "./config/env.mjs";
 import express from "express"
 import { GetMainPage } from "./getMainPage.mjs";
+import { iniciarTunelLocaTunel as iniciarTunel} from "./tunelweb.mjs";
+
 
 const app = express();
 const PORT = config.port;
 
+app.use(cors());
 app.use(express.json())
 
 
@@ -73,6 +77,10 @@ app.get("/getMainPage", async (req, res)=> {
 // En local, 0.0.0.0 también responde en localhost.
 const HOST = process.env.HOST || '0.0.0.0';
 
-app.listen(PORT, HOST, () => {
+app.listen(PORT, HOST,async () => {
   console.log(`Servidor corriendo en http://${HOST}:${PORT}`)
+
+  // 3. Iniciamos el túnel SOLO cuando el servidor ya está escuchando
+  console.log("🔗 Intentando abrir túnel público...");
+  await iniciarTunel();
 })
